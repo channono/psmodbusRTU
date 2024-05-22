@@ -5,7 +5,6 @@
 # FC01 Read Coil Status
 function ReadCoilStatus($slaveAddress, $startAddress, $coilCount) {
     $functionCode = [byte]1
-    $byteCount = [System.Convert]::ToByte([math]::Ceiling($coilCount / 8))
 
     # Construct the request
     $request = [byte[]]@(
@@ -43,8 +42,7 @@ function ReadCoilStatus($slaveAddress, $startAddress, $coilCount) {
 #FC02 Read Discrete Input status
 function ReadDiscreteInputs($slaveAddress, $startAddress, $inputCount) {
     $functionCode = [byte]2
-    $byteCount = [System.Convert]::ToByte([math]::Ceiling($inputCount / 8))
-
+    
     # Construct the request
     $request = [byte[]]@(
         [byte]$slaveAddress,
@@ -213,90 +211,9 @@ function WriteSingleHoldingRegister($slaveAddress, $registerAddress, $value) {
         }
 }
 
-#FC14  Read Log Record
-function ReadSingleFileRecord($slaveAddress, $fileNumber, $startRecord, $recordCount) {
-        $functionCode = [byte]20  # 0x14
-
-        # Construct the request
-        $request = [byte[]]@(
-            [byte]$slaveAddress,
-            $functionCode,
-            7,
-            6,
-            [System.Convert]::ToByte($fileNumber / 256),
-            [System.Convert]::ToByte($fileNumber % 256),
-            [System.Convert]::ToByte($startRecord / 256),
-            [System.Convert]::ToByte($startRecord % 256),
-            [System.Convert]::ToByte($recordCount / 256),
-            [System.Convert]::ToByte($recordCount % 256)
-        )
-
-        # Calculate and append CRC16
-        $request += CalculateCRC $request
-        $request -join " " | Write-Host
-
-        # Send the request to the Modbus device (you need to set up the port first)
-        $port.Write($request, 0, $request.Length)
-
-        # Wait for response (adjust sleep time as needed)
-        Start-Sleep -Milliseconds 100
-
-        # Read the response (you need to handle the response accordingly)
-        $response = $port.ReadExisting()
-        $responseBytes = [System.Text.Encoding]::ASCII.GetBytes($response)
-
-        if ($responseBytes) {
-            Write-Host "Received bytes:"
-            $responseBytes -join " " | Write-Host
-            return $responseBytes
-        } else {
-            Write-Host "No response received"
-        }
-}
-
-#FC14  Read multi Log Record
-function ReadMultiFileRecords($slaveAddress, $fileNumbers, $recordLength) {
-    # Calculate the total byte count based on the number of file records
-    $byteCount = $fileNumbers.Count * 7
-
-    # Construct the request
-    $request = [byte[]]@(
-        [byte]$slaveAddress,
-        0x14,  # Function code for Read File Record
-        $byteCount
-    )
-
-    # Add each file record to the request
-    foreach ($fileNumber in $fileNumbers) {
-        $request += 6  # Reference type (fixed value)
-        $request += [System.BitConverter]::GetBytes($fileNumber)  # File number (2 bytes)
-        $request += [System.BitConverter]::GetBytes(0)  # Record number (2 bytes, set to 0 for simplicity)
-        $request += [System.BitConverter]::GetBytes($recordLength)  # Record length (2 bytes)
-    }
 
 
-     $request += CalculateCRC $request
-
-    
-     $port.Write($request, 0, $request.Length)
-
-   
-      Start-Sleep -Milliseconds 100
-
-     
-      $response = $port.ReadExisting()
-      $responseBytes = [System.Text.Encoding]::ASCII.GetBytes($response)
-      if ($responseBytes) {
-        Write-Host "Received bytes:"
-        $responseBytes -join " " | Write-Host
-        return $responseBytes
-      } else {
-            Write-Host "No response received"
-      }
-
-}
-
-#FC0F  Read multi Log Record
+#FC15  Read multi Log Record
  function WriteMultipleCoils($slaveAddress, $coilAddresses, $values) {
         # Validate input arrays
         if ($coilAddresses.Length -ne $values.Length) {
@@ -343,12 +260,11 @@ function ReadMultiFileRecords($slaveAddress, $fileNumbers, $recordLength) {
         }
 }
 
-#  FC10 Write to Multi Holding Register
+#  FC16 Write to Multi Holding Register
 function WriteMultiRegister ($slaveAddress, $startAddress, $values) {
         $functionCode = [byte]16
         $registerCount = $values.Length   # Assuming each value is 16 bits (2 bytes)
-        $byteCount = $values.Length * 2
-        [byte[]]$byteValues =$Values
+        $byteCount = $values.Length * 2     
 
         # Construct the request
         $request = [byte[]]@(
@@ -359,7 +275,7 @@ function WriteMultiRegister ($slaveAddress, $startAddress, $values) {
             [System.Convert]::ToByte($registerCount / 256),
             [System.Convert]::ToByte($registerCount % 256),
             [System.Convert]::ToByte($byteCount)
-            #$byteValues
+             
         )
 
 
@@ -395,7 +311,88 @@ function WriteMultiRegister ($slaveAddress, $startAddress, $values) {
     }
 
 
+#FC20  Read Single Log Record
+function ReadSingleFileRecord($slaveAddress, $fileNumber, $startRecord, $recordCount) {
+    $functionCode = [byte]20  # 0x14
 
+    # Construct the request
+    $request = [byte[]]@(
+        [byte]$slaveAddress,
+        $functionCode,
+        7,
+        6,
+        [System.Convert]::ToByte($fileNumber / 256),
+        [System.Convert]::ToByte($fileNumber % 256),
+        [System.Convert]::ToByte($startRecord / 256),
+        [System.Convert]::ToByte($startRecord % 256),
+        [System.Convert]::ToByte($recordCount / 256),
+        [System.Convert]::ToByte($recordCount % 256)
+    )
+
+    # Calculate and append CRC16
+    $request += CalculateCRC $request
+    $request -join " " | Write-Host
+
+    # Send the request to the Modbus device (you need to set up the port first)
+    $port.Write($request, 0, $request.Length)
+
+    # Wait for response (adjust sleep time as needed)
+    Start-Sleep -Milliseconds 100
+
+    # Read the response (you need to handle the response accordingly)
+    $response = $port.ReadExisting()
+    $responseBytes = [System.Text.Encoding]::ASCII.GetBytes($response)
+
+    if ($responseBytes) {
+        Write-Host "Received bytes:"
+        $responseBytes -join " " | Write-Host
+        return $responseBytes
+    } else {
+        Write-Host "No response received"
+    }
+}
+
+#FC20  Read multi Log Record
+function ReadMultiFileRecords($slaveAddress, $fileNumbers, $recordLength) {
+# Calculate the total byte count based on the number of file records
+$byteCount = $fileNumbers.Count * 7
+
+# Construct the request
+$request = [byte[]]@(
+    [byte]$slaveAddress,
+    0x14,  # Function code for Read File Record
+    $byteCount
+)
+
+# Add each file record to the request
+foreach ($fileNumber in $fileNumbers) {
+    $request += 6  # Reference type (fixed value)
+    $request += [System.BitConverter]::GetBytes($fileNumber)  # File number (2 bytes)
+    $request += [System.BitConverter]::GetBytes(0)  # Record number (2 bytes, set to 0 for simplicity)
+    $request += [System.BitConverter]::GetBytes($recordLength)  # Record length (2 bytes)
+}
+
+
+ $request += CalculateCRC $request
+
+
+ $port.Write($request, 0, $request.Length)
+
+
+  Start-Sleep -Milliseconds 100
+
+ 
+  $response = $port.ReadExisting()
+  $responseBytes = [System.Text.Encoding]::ASCII.GetBytes($response)
+  if ($responseBytes) {
+    Write-Host "Received bytes:"
+    $responseBytes -join " " | Write-Host
+    return $responseBytes
+  } else {
+        Write-Host "No response received"
+  }
+
+}
  
 
     # Calculate CRC
@@ -436,24 +433,6 @@ function WriteMultiRegister ($slaveAddress, $startAddress, $values) {
 
             }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
