@@ -296,7 +296,7 @@ function ReadMultiFileRecords($slaveAddress, $fileNumbers, $recordLength) {
 
 }
 
-#FC15  Read multi Log Record
+#FC0F  Read multi Log Record
  function WriteMultipleCoils($slaveAddress, $coilAddresses, $values) {
         # Validate input arrays
         if ($coilAddresses.Length -ne $values.Length) {
@@ -343,7 +343,7 @@ function ReadMultiFileRecords($slaveAddress, $fileNumbers, $recordLength) {
         }
 }
 
-#  FC16 Write to Multi Holding Register
+#  FC10 Write to Multi Holding Register
 function WriteMultiRegister ($slaveAddress, $startAddress, $values) {
         $functionCode = [byte]16
         $registerCount = $values.Length   # Assuming each value is 16 bits (2 bytes)
