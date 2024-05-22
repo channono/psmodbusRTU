@@ -6,4 +6,4 @@
   
   Version of Powershell above 6.0
 
-  FC 01, 02, 03, 04, 05, 06，14， 15，16，
+  FC 1, 2, 3, 4, 5, 6，15，16，20
